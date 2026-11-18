@@ -1,53 +1,124 @@
-// Keyboard and pointer input. Held keys give a steering direction; one-shot presses (start or
-// restart, pause) are queued as bit flags and taken once by the loop, so a press between two
-// frames is never lost and never counted twice.
+/**
+ * @file input.js
+ * @description Keyboard and mouse input handling for Vice Point 3D.
+ * Exports createInput(canvas).
+ */
 
-export const ACTION_CONFIRM = 1;
-export const ACTION_PAUSE = 2;
+export function createInput(canvas) {
+  const keys = new Map();
+  const pressed = new Map(); // Edge-triggered flags
+  const mouseState = { x: 0, y: 0, clicked: false, rawClicked: false };
 
-const LEFT = new Set(['ArrowLeft', 'KeyA']);
-const RIGHT = new Set(['ArrowRight', 'KeyD']);
-const CONFIRM = new Set(['Space', 'Enter']);
-const PAUSE = new Set(['KeyP', 'Escape']);
+  function onKeyDown(e) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', ' '].includes(e.key) || e.code === 'Space') {
+      e.preventDefault();
+    }
+    const code = e.code || e.key;
+    if (!keys.get(code)) {
+      pressed.set(code, true);
+    }
+    keys.set(code, true);
 
-export function createInput(target) {
-  let left = false;
-  let right = false;
-  let actions = 0;
+    // Also map standard key identifiers
+    keys.set(e.key.toLowerCase(), true);
+  }
 
-  window.addEventListener('keydown', (event) => {
-    if (LEFT.has(event.code)) left = true;
-    else if (RIGHT.has(event.code)) right = true;
-    else if (CONFIRM.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_CONFIRM;
-    } else if (PAUSE.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_PAUSE;
-    } else return;
-    event.preventDefault();
-  });
-  window.addEventListener('keyup', (event) => {
-    if (LEFT.has(event.code)) left = false;
-    else if (RIGHT.has(event.code)) right = false;
-  });
-  // A key released while the tab is hidden never sends keyup: let go of everything on blur.
-  window.addEventListener('blur', () => {
-    left = false;
-    right = false;
-  });
-  target.addEventListener('pointerdown', () => {
-    actions |= ACTION_CONFIRM;
-  });
+  function onKeyUp(e) {
+    const code = e.code || e.key;
+    keys.set(code, false);
+    keys.set(e.key.toLowerCase(), false);
+  }
+
+  function onMouseMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 1280 / (rect.width || 1280);
+    const scaleY = 720 / (rect.height || 720);
+    mouseState.x = (e.clientX - rect.left) * scaleX;
+    mouseState.y = (e.clientY - rect.top) * scaleY;
+  }
+
+  function onMouseDown(e) {
+    onMouseMove(e);
+    mouseState.rawClicked = true;
+  }
+
+  function attach() {
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mousedown', onMouseDown);
+  }
+
+  function detach() {
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    canvas.removeEventListener('mousemove', onMouseMove);
+    canvas.removeEventListener('mousedown', onMouseDown);
+    keys.clear();
+    pressed.clear();
+  }
+
+  function isDown(k1, k2) {
+    return !!(keys.get(k1) || keys.get(k2) || keys.get(k1.toLowerCase()) || keys.get(k2?.toLowerCase()));
+  }
+
+  function checkEdge(k1, k2) {
+    const active = isDown(k1, k2);
+    // Edge triggered: if down now and not consumed, or if pressed event registered
+    const code1 = k1;
+    const code2 = k2;
+    let isPressed = pressed.get(code1) || pressed.get(code2) || pressed.get(k1.toLowerCase()) || pressed.get(k2?.toLowerCase());
+    if (isPressed) {
+      pressed.set(code1, false);
+      if (code2) pressed.set(code2, false);
+      pressed.set(k1.toLowerCase(), false);
+      if (k2) pressed.set(k2.toLowerCase(), false);
+      return true;
+    }
+    return false;
+  }
 
   return {
-    /** -1 for left, 1 for right, 0 for neither or both. */
-    direction() {
-      return (right ? 1 : 0) - (left ? 1 : 0);
+    attach,
+    detach,
+    read() {
+      // Axes mx, my (-1..1)
+      let mx = 0;
+      let my = 0;
+      if (isDown('ArrowLeft', 'KeyA')) mx -= 1;
+      if (isDown('ArrowRight', 'KeyD')) mx += 1;
+      if (isDown('ArrowUp', 'KeyW')) my -= 1;
+      if (isDown('ArrowDown', 'KeyS')) my += 1;
+
+      const enter = checkEdge('KeyE', 'Enter');
+      const action = checkEdge('KeyF', 'KeyE'); // Or F
+      const radio = checkEdge('KeyR', 'KeyR');
+      const pause = checkEdge('KeyP', 'Escape');
+      const mute = checkEdge('KeyM', 'KeyM');
+      const handbrake = isDown('Space', 'Space');
+
+      mouseState.clicked = mouseState.rawClicked;
+      mouseState.rawClicked = false; // consume mouse click
+
+      return {
+        mx,
+        my,
+        enter,
+        action,
+        handbrake,
+        radio,
+        pause,
+        mute
+      };
     },
-    /** The one-shot presses since the last call, as ACTION_* flags. */
-    takeActions() {
-      const taken = actions;
-      actions = 0;
-      return taken;
-    },
+    get mouse() {
+      const clicked = mouseState.clicked;
+      mouseState.clicked = false;
+      return {
+        x: mouseState.x,
+        y: mouseState.y,
+        clicked
+      };
+    }
   };
 }

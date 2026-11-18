@@ -1,61 +1,89 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+/**
+ * @file config.js
+ * @description Configuration and constants for Vice Point 3D.
+ * Exports all tuning parameters, color palettes, and keys for the game engine.
+ */
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
 export const STEP = 1 / 60;
+export const FIELD = { width: 1280, height: 720 };
+export const WORLD = { width: 2560, height: 1920 };
 
 export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+  radius: 10,
+  walkSpeed: 170,
+  health: 100
 };
 
-export const LIVES = 3;
-
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
+export const CAR = {
+  length: 46,
+  width: 22,
+  accel: 420,
+  brake: 600,
+  reverseAccel: 260,
+  maxSpeed: 520,
+  maxReverse: 160,
+  turnRate: 2.6,
+  grip: 3.2
 };
 
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
+export const TRAFFIC = {
+  count: 14,
+  speedMin: 90,
+  speedMax: 150
 };
 
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
+export const PEDS = {
+  count: 22,
+  speedMin: 28,
+  speedMax: 55
+};
 
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
+export const POLICE = {
+  chaseSpeed: 540,
+  ramDamage: 8,
+  spawnDistance: 500
+};
+
+export const HELI = {
+  altitude: 160,
+  speed: 320,
+  searchRadius: 90
+};
+
+export const WANTED = {
+  decayDelay: 6,
+  decayRate: 0.25,
+  max: 5
+};
+
+export const SAVE_KEY = 'vice-point-v3.save';
+export const BEST_KEY = 'vice-point-v3.best';
 
 export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
+  skyTop: '#2b1a4d',
+  skyBottom: '#ff7e3d',
+  fog: '#e07840',
+  asphalt: '#232733',
+  roadLine: '#c9a227',
+  sidewalk: '#3a3f4d',
+  buildings: ['#d1d5db', '#9ca3af', '#6b7280', '#4b5563', '#374151', '#f3f4f6', '#e5e7eb', '#1f2937'],
+  windowsLit: '#ffd166',
+  windowsDark: '#2b3040',
+  park: '#1f4d2e',
+  sand: '#c2a878',
+  water: '#14425e',
   player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
+  police: '#e5534b',
+  policeLightA: '#ff3b30',
+  policeLightB: '#3b82f6',
+  heli: '#3a3f4d',
+  trafficCars: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'],
+  peds: ['#fca5a5', '#93c5fd', '#86efac', '#fde047', '#d8b4fe', '#f472b6'],
+  hudPanel: 'rgba(10,12,20,0.72)',
   text: '#eef1f5',
   muted: '#8b93a3',
+  objective: '#ffd166',
+  money: '#7ee787'
 };
 
 export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
